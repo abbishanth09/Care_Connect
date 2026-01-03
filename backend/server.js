@@ -23,6 +23,10 @@ app.use(cors());
 app.use("/api/admin", adminRouter);
 app.use("/api/doctor", doctorRoute);
 app.use("/api/patient", patientRoute);
+app.get('/', (req, res) => {
+  res.send('Backend is running 🚀');
+});
+
 
 app.get("/", (req, res) => {
   res.send("app is working ");
