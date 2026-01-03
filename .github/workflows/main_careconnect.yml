@@ -1,34 +1,65 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy Node.js app to Azure Web App - CareConnect
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
-      - name: Install backend
-        working-directory: backend
-        run: npm install
-      - name: Upload artifact
+          node-version: '22.x'
+
+      - name: npm install, build, and test
+        run: |
+          npm install
+          npm run build --if-present
+          npm run test --if-present
+      
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: backend
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
         with:
           name: node-app
-      - uses: azure/login@v2
+      
+      - name: Login to Azure
+        uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - uses: azure/webapps-deploy@v3
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8E7CA53489354DE5AE8085D37336C084 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6A20F0E61AE449C5A5BFEB84188ED20A }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6D8F6C6930FA454C9966B7BEA8281370 }}
+
+      - name: 'Deploy to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
         with:
           app-name: 'CareConnect'
           slot-name: 'Production'
-          package: backend
+          package: .
+          
